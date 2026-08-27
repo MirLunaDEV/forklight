@@ -116,4 +116,8 @@ All Phase 3 local acceptance checks are now represented by live-host evidence.
 
 ## External deployment boundary
 
-This session proves real local in-app browser WebMCP registration and invocation. A public HTTPS deployment and a separate production ChatGPT session were not run, so no public-deployment compatibility claim is made.
+Forklight is publicly deployed over HTTPS at:
+
+<https://forklight.kimth06230724.chatgpt.site>
+
+The deployment packages the validated Vite client with a Cloudflare-compatible static-assets Worker. The full WebMCP acceptance above was executed in the real local in-app browser host. A separate production ChatGPT conversation has not repeated the entire A/B/C scenario, so the local live acceptance and public deployment evidence remain explicitly distinguished.

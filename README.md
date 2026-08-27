@@ -42,6 +42,8 @@ The production output is the static `dist/` directory. No backend, database, aut
 
 **Forklight — Try the future before you merge it.**
 
+Public deployment: <https://forklight.kimth06230724.chatgpt.site>
+
 ## License
 
 MIT.
