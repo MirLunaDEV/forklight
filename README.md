@@ -1,68 +1,158 @@
 # Forklight
 
-> **Before an agent changes your live application, let it try several futures first.**
+> **Try the future before you merge it.**
 
-Forklight is a static React/Vite 3D logistics sandbox for the OpenAI WebMCP Challenge. A human first locks the goal policy, an agent experiments in isolated futures, the deterministic validator checks those human-defined rules, and only a verified future approved through the page UI can expose the dynamic merge capability.
-
-## Human policy lifecycle
+Forklight is not a warehouse optimizer. The warehouse is a visual demonstration substrate for a broader interaction primitive:
 
 ```text
-Human defines and locks acceptable boundaries
-→ Agent explores isolated futures
-→ Simulator measures objective consequences
-→ Validator checks the human policy
-→ Human approves one verified future for merge
-→ WebMCP exposes merge_verified_branch
-→ Agent merges only after permission
+live state
+→ isolated futures
+→ deterministic verification
+→ human decision
+→ dynamic capability
+→ merge
 ```
 
-The challenge policy keeps the validated golden limits: throughput `≥ +20%`, distance increase `≤ +10%`, protected moves `= 0`, and congestion `≤ MAIN baseline`. Policy locking and approval are human UI actions; WebMCP can inspect the policy but cannot change or lock it.
+Forklight is a browser-based WebMCP application where an AI agent can explore alternative futures without changing MAIN. A deterministic simulator checks each future against boundaries owned by the human, and only a freshly verified future approved in the page can expose the capability to merge.
 
 > The human defines what must never be violated. The agent explores what could work. The simulator verifies what actually works. The human decides what becomes real.
 
 Forklight gives agents freedom inside branches while humans define the boundaries and control the commit.
 
-## Source of truth
+## Why it exists
 
-Read in this order:
+Agent tools often expose live mutation immediately. Forklight demonstrates a safer collaboration model: branch first, measure consequences, verify deterministic rules, show the trade-offs to a human, and unlock the irreversible action only after approval.
 
-1. [`AGENTS.md`](AGENTS.md)
-2. [`docs/MASTER_SPEC.md`](docs/MASTER_SPEC.md)
-3. [`docs/WEBMCP_TOOLS.md`](docs/WEBMCP_TOOLS.md)
+## Human-agent workflow
 
-## Run locally
+1. MAIN starts at revision 1.
+2. The human reviews and locks HUMAN POLICY.
+3. The agent creates and edits isolated futures.
+4. The simulator produces deterministic metrics.
+5. The validator checks the human-owned policy.
+6. The human approves one verified future with **Approve for Merge**.
+7. The page dynamically exposes `merge_verified_branch`.
+8. The agent merges the approved future; MAIN advances and older candidates become stale.
+
+The agent cannot lock or edit policy and cannot approve a future.
+
+## HUMAN POLICY
+
+Policy begins in `draft`. Until the human clicks **Lock policy**, experiment tools return `POLICY_NOT_LOCKED` and MAIN remains unchanged.
+
+| Boundary | Requirement |
+|---|---:|
+| Throughput improvement | at least `+20%` versus MAIN |
+| Average planned distance | no more than `+10%` versus MAIN |
+| Protected equipment moves | exactly `0` |
+| Congestion | no worse than MAIN |
+
+Editing policy invalidates active verification, revokes approval, and removes merge capability.
+
+## Why WebMCP matters
+
+WebMCP is part of Forklight's authority model, not a wrapper around page buttons. The browser document registers tools through `document.modelContext`, and the available tool surface changes with live application state. Human approval creates a capability the agent could not call before.
+
+## WebMCP tools
+
+Forklight registers exactly nine tools at boot.
+
+| Tool | Purpose |
+|---|---|
+| `inspect_world` | Read MAIN, routes, metrics, and branch summaries |
+| `inspect_constraints` | Read the human-owned policy and lock state |
+| `inspect_branch` | Read one candidate future |
+| `compare_branches` | Compare all futures with MAIN |
+| `create_branch` | Create an isolated future |
+| `move_entity` | Move an entity inside a future |
+| `modify_route` | Enable or update a route inside a future |
+| `run_simulation` | Run the deterministic simulation |
+| `validate_branch` | Check a future against HUMAN POLICY |
+
+The four inspection tools are annotated read-only. Results and errors are structured JSON-serializable objects. There is no policy-writing, policy-locking, approval, or revoke WebMCP tool.
+
+## Capability Bloom
+
+`merge_verified_branch` is absent at boot. It is registered only while all of these are true:
+
+```text
+verified branch
++ fresh validation
++ current MAIN revision
++ human approval
+= merge capability
+```
+
+Revoke, mutation, policy edit, staleness, revision change, or successful merge removes the tool.
+
+## Demo A/B/C scenario
+
+| Future | Change | Deterministic result |
+|---|---|---|
+| A | Move south barrier and enable south route | **FAIL** — distance `+10.5%` |
+| B | Move north barrier and enable north route | **VERIFIED** — all four rules pass |
+| C | Perform B, then move protected Scanner and its waypoint | **FAIL** — protected equipment moved |
+
+B is the only verified future. Detailed steps and expected results are in [Judge Testing](docs/JUDGE_TESTING.md).
+
+## Architecture
+
+```text
+Human UI ─────┐
+              ├─→ shared domain commands → serializable state
+WebMCP tools ─┘             │
+                            ├─→ deterministic simulator
+                            ├─→ policy validator
+                            └─→ capability lifecycle
+
+Serializable state → React UI + React Three Fiber scene
+```
+
+Three.js is a view of `WorldState`, not the source of truth. The app has no database, authentication, accounts, multiplayer, server-owned application state, or external LLM API key.
+
+## Tech stack
+
+- React 19 and TypeScript
+- Vite
+- Three.js, React Three Fiber, and Drei
+- Zustand
+- Tailwind CSS
+- Vitest and ESLint
+- WebMCP `document.modelContext`
+- Cloudflare Workers-compatible static asset adapter through OpenAI Sites
+
+## Running locally
+
+Requirements: Node.js 22+ and npm. No GitHub account, credentials, or paid API is required.
 
 ```bash
 npm ci
 npm run dev
 ```
 
-Open `http://127.0.0.1:8080/`, review HUMAN POLICY, and select **Lock policy** before exploration. Deterministic rehearsal controls are intentionally hidden from the submission view; use `http://127.0.0.1:8080/?qa=1` only for manual QA.
+Open <http://127.0.0.1:8080/>. Deterministic manual QA controls are hidden by default and available only at <http://127.0.0.1:8080/?qa=1>.
 
-## Verify and build
+## Tests
 
 ```bash
 npm run typecheck
 npm test
+npm run lint
 npm run build
 ```
 
-The production output is the static `dist/` directory. No backend, database, authentication, account, multiplayer, migration, or LLM API key is required.
+The final suite contains 47 tests covering branch isolation, deterministic A/B/C metrics, HUMAN POLICY gates, proof invalidation, human approval, dynamic capability registration, merge state transitions, WebMCP structured results, QA isolation, and fallback behavior when WebMCP is unavailable.
 
-## Implementation results
+See [Final Verification](docs/FINAL_VERIFICATION.md) and [Production WebMCP Verification](docs/PRODUCTION_WEBMCP_VERIFICATION.md).
 
-- [`docs/AUDIT_RESULT.md`](docs/AUDIT_RESULT.md) — baseline audit
-- [`docs/PHASE1_RESULT.md`](docs/PHASE1_RESULT.md) — static cleanroom extraction
-- [`docs/PHASE2_RESULT.md`](docs/PHASE2_RESULT.md) — WebMCP contract hardening
-- [`docs/LIVE_WEBMCP_RESULT.md`](docs/LIVE_WEBMCP_RESULT.md) — complete live local WebMCP acceptance evidence
-- [`docs/HUMAN_POLICY_RESULT.md`](docs/HUMAN_POLICY_RESULT.md) — human-policy UX and regression evidence
+## Live demo
 
-## Product thesis
+<https://forklight.kimth06230724.chatgpt.site/>
 
-**Forklight — Try the future before you merge it.**
+## Judge testing instructions
 
-Public deployment: <https://forklight.kimth06230724.chatgpt.site>
+Follow [docs/JUDGE_TESTING.md](docs/JUDGE_TESTING.md) for the complete copy-paste test flow and expected states.
 
 ## License
 
-MIT.
+Forklight is available under the [MIT License](LICENSE).
