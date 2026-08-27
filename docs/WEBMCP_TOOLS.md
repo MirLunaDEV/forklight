@@ -5,28 +5,59 @@ Reference: `https://webmachinelearning.github.io/webmcp/`
 ## API
 
 ```ts
-document.modelContext.registerTool(tool, { signal })
-document.modelContext.getTools()
+document.modelContext.registerTool(tool, { signal });
+document.modelContext.getTools();
 ```
 
 ## Static tools
 
-| Name | Title | Read-only |
-|---|---|---:|
-| inspect_world | Inspect world | yes |
-| inspect_constraints | Inspect constraints | yes |
-| inspect_branch | Inspect future | yes |
-| compare_branches | Compare futures | yes |
-| create_branch | Create future | no |
-| move_entity | Move entity in future | no |
-| modify_route | Modify route in future | no |
-| run_simulation | Simulate future | no |
-| validate_branch | Validate future | no |
+| Name                | Title                  | Read-only |
+| ------------------- | ---------------------- | --------: |
+| inspect_world       | Inspect world          |       yes |
+| inspect_constraints | Inspect constraints    |       yes |
+| inspect_branch      | Inspect future         |       yes |
+| compare_branches    | Compare futures        |       yes |
+| create_branch       | Create future          |        no |
+| move_entity         | Move entity in future  |        no |
+| modify_route        | Modify route in future |        no |
+| run_simulation      | Simulate future        |        no |
+| validate_branch     | Validate future        |        no |
+
+The five experiment tools require the human-owned goal policy to be locked. While policy is draft they return:
+
+```json
+{
+  "ok": false,
+  "error": {
+    "code": "POLICY_NOT_LOCKED",
+    "message": "The human must lock the goal policy before future exploration begins."
+  }
+}
+```
+
+`inspect_constraints` remains read-only and exposes the current human policy without adding a policy-writing tool:
+
+```json
+{
+  "ok": true,
+  "policy": {
+    "status": "locked",
+    "definedBy": "human",
+    "minThroughputImprovement": 0.2,
+    "maxDistanceIncrease": 0.1,
+    "maxProtectedMoved": 0,
+    "maxCongestionRatio": 1
+  },
+  "explorationEnabled": true
+}
+```
+
+Static tool count remains exactly nine. The agent cannot change or lock policy.
 
 ## Dynamic
 
-| Name | Title |
-|---|---|
+| Name                  | Title                 |
+| --------------------- | --------------------- |
 | merge_verified_branch | Merge approved future |
 
 Absent at boot.
@@ -66,6 +97,8 @@ abort
 ## Human boundary
 
 No approval WebMCP tool.
+
+No policy mutation or policy lock WebMCP tool. Policy configuration and locking are page-UI-only human actions.
 
 ## Demo prompt
 

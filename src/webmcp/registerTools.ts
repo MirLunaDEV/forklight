@@ -1,4 +1,3 @@
-import { HARD_CONSTRAINTS } from "../constraints/rules";
 import { useAppStore } from "../state/appStore";
 import {
   abortMergeCapability,
@@ -37,19 +36,26 @@ function staticTools() {
       name: "inspect_constraints",
       title: "Inspect constraints",
       description:
-        "Read the four hard constraints a future must pass before it can be verified. Does not mutate state.",
+        "Read the human-defined goal policy, its lock status, and the four hard constraints a future must pass before it can be verified. Does not mutate state; the agent cannot change or lock policy.",
       inputSchema: TOOL_SCHEMAS.inspect_constraints,
       annotations: { readOnlyHint: true },
       execute: async () =>
-        runTool("inspect_constraints", "inspect constraints", () => ({
-          ...HARD_CONSTRAINTS,
-          readable: [
-            "Throughput must improve by at least 20% versus MAIN baseline.",
-            "Average planned travel distance may increase by at most 10%.",
-            "Protected equipment must not be moved (count stays 0).",
-            "Congestion must be no worse than the MAIN baseline.",
-          ],
-        })),
+        runTool("inspect_constraints", "inspect human policy", () => {
+          const state = useAppStore.getState();
+          return {
+            policy: { ...state.policy },
+            explorationEnabled: state.policy.status === "locked",
+            protectedEquipment: state.main.entities
+              .filter((entity) => entity.protected)
+              .map((entity) => ({ id: entity.id, name: entity.name })),
+            readable: [
+              "Throughput must improve by at least 20% versus MAIN baseline.",
+              "Average planned travel distance may increase by at most 10%.",
+              "Protected equipment must not be moved (count stays 0).",
+              "Congestion must be no worse than the MAIN baseline.",
+            ],
+          };
+        }),
     },
     {
       name: "inspect_branch",
@@ -85,7 +91,7 @@ function staticTools() {
       name: "create_branch",
       title: "Create future",
       description:
-        "Deep-clone MAIN into an isolated candidate. The agent supplies a display name; the page assigns branchId. Experiment tools cannot mutate MAIN.",
+        "After the human locks the goal policy, deep-clone MAIN into an isolated candidate. The agent supplies a display name; the page assigns branchId. Experiment tools cannot mutate MAIN.",
       inputSchema: TOOL_SCHEMAS.create_branch,
       annotations: { readOnlyHint: false },
       execute: async (input: Record<string, unknown>) => {
@@ -107,7 +113,7 @@ function staticTools() {
       name: "move_entity",
       title: "Move entity in future",
       description:
-        "Move one entity inside a candidate branch. MAIN cannot be mutated. Out-of-bounds positions are rejected, not clamped. Moving a protected entity records a permanent protected violation even if later reverted.",
+        "After the human locks the goal policy, move one entity inside a candidate branch. MAIN cannot be mutated. Out-of-bounds positions are rejected, not clamped. Moving a protected entity records a permanent protected violation even if later reverted.",
       inputSchema: TOOL_SCHEMAS.move_entity,
       annotations: { readOnlyHint: false },
       execute: async (input: Record<string, unknown>) => {
@@ -120,31 +126,27 @@ function staticTools() {
         const entityId = argString(record.entityId);
         const x = Number(record.position?.x);
         const z = Number(record.position?.z);
-        return runTool(
-          "move_entity",
-          `${entityId} → (${x},${z})`,
-          () => {
-            const result = useAppStore.getState().moveEntity({
-              branchId,
-              entityId,
-              position: { x, z },
-            });
-            if (!result.ok) return result;
-            return {
-              branchId: result.data.branch.id,
-              mutationVersion: result.data.branch.mutationVersion,
-              status: result.data.branch.status,
-              summary: result.data.branch.changes.at(-1)?.summary,
-            };
-          },
-        );
+        return runTool("move_entity", `${entityId} → (${x},${z})`, () => {
+          const result = useAppStore.getState().moveEntity({
+            branchId,
+            entityId,
+            position: { x, z },
+          });
+          if (!result.ok) return result;
+          return {
+            branchId: result.data.branch.id,
+            mutationVersion: result.data.branch.mutationVersion,
+            status: result.data.branch.status,
+            summary: result.data.branch.changes.at(-1)?.summary,
+          };
+        });
       },
     },
     {
       name: "modify_route",
       title: "Modify route in future",
       description:
-        "Enable/disable a route or replace its waypoints inside a candidate. Speed, capacity, source, and target cannot be changed. MAIN cannot be mutated. Requires enabled and/or waypoints.",
+        "After the human locks the goal policy, enable/disable a route or replace its waypoints inside a candidate. Speed, capacity, source, and target cannot be changed. MAIN cannot be mutated. Requires enabled and/or waypoints.",
       inputSchema: TOOL_SCHEMAS.modify_route,
       annotations: { readOnlyHint: false },
       execute: async (input: Record<string, unknown>) => {
@@ -162,7 +164,8 @@ function staticTools() {
           enabled?: boolean;
           waypoints?: { x: number; z: number }[];
         } = { branchId, routeId };
-        if (typeof record.enabled === "boolean") payload.enabled = record.enabled;
+        if (typeof record.enabled === "boolean")
+          payload.enabled = record.enabled;
         if (Array.isArray(record.waypoints)) {
           payload.waypoints = record.waypoints.map((point) => {
             const item = point as { x?: unknown; z?: unknown };
@@ -185,7 +188,7 @@ function staticTools() {
       name: "run_simulation",
       title: "Simulate future",
       description:
-        "Run the deterministic discrete-flow simulator on a candidate and store metrics. Does not change MAIN. Does not grant merge capability.",
+        "After the human locks the goal policy, run the deterministic discrete-flow simulator on a candidate and store metrics. Does not change MAIN. Does not grant merge capability.",
       inputSchema: TOOL_SCHEMAS.run_simulation,
       annotations: { readOnlyHint: false },
       execute: async (input: Record<string, unknown>) => {
@@ -205,7 +208,7 @@ function staticTools() {
       name: "validate_branch",
       title: "Validate future",
       description:
-        "Check a candidate against the four hard constraints. Re-runs simulation if metrics are stale. Verified status is required before a human can approve merge capability. The agent cannot approve or merge from this tool.",
+        "After the human locks the goal policy, check a candidate against its four hard constraints. Re-runs simulation if metrics are stale. Verified status is required before a human can approve merge capability. The agent cannot change policy, approve, or merge from this tool.",
       inputSchema: TOOL_SCHEMAS.validate_branch,
       annotations: { readOnlyHint: false },
       execute: async (input: Record<string, unknown>) => {

@@ -1,9 +1,5 @@
 export type EntityType =
-  | "machine"
-  | "barrier"
-  | "spawn"
-  | "destination"
-  | "junction";
+  "machine" | "barrier" | "spawn" | "destination" | "junction";
 
 export interface Vec2 {
   x: number;
@@ -70,6 +66,13 @@ export interface ConstraintSet {
   maxCongestionRatio: number;
 }
 
+export type PolicyStatus = "draft" | "locked";
+
+export interface GoalPolicy extends ConstraintSet {
+  status: PolicyStatus;
+  definedBy: "human";
+}
+
 export interface Change {
   id: string;
   at: number;
@@ -80,12 +83,7 @@ export interface Change {
 }
 
 export type BranchStatus =
-  | "draft"
-  | "simulated"
-  | "verified"
-  | "failed"
-  | "stale"
-  | "merged";
+  "draft" | "simulated" | "verified" | "failed" | "stale" | "merged";
 
 export interface ValidationCheck {
   id: "throughput" | "distance" | "protected" | "congestion";
@@ -135,8 +133,7 @@ export interface CommandError {
 }
 
 export type CommandResult<T> =
-  | { ok: true; data: T }
-  | { ok: false; error: CommandError };
+  { ok: true; data: T } | { ok: false; error: CommandError };
 
 export const FLOOR = { width: 24, depth: 16 } as const;
 export const MOVABLE_BOUNDS = { minX: 1, maxX: 23, minZ: 1, maxZ: 15 } as const;

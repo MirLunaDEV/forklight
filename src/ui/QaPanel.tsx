@@ -7,6 +7,7 @@ export function QaPanel() {
   const selectedView = useAppStore((state) => state.selectedView);
   const mergeRegisteredFor = useAppStore((state) => state.mergeRegisteredFor);
   const qaLog = useAppStore((state) => state.qaLog);
+  const policyLocked = useAppStore((state) => state.policy.status === "locked");
   const selectedBranch = branches.find(
     (branch) => branch.id === selectedView || branch.name === selectedView,
   );
@@ -17,11 +18,13 @@ export function QaPanel() {
         QA controls
       </h2>
       <p className="mb-3 text-xs text-muted">
-        Manual rehearsal path. These buttons call the same domain commands as
-        WebMCP tools. They are not site tools.
+        {policyLocked
+          ? "Manual rehearsal path. These buttons call the same domain commands as WebMCP tools. They are not site tools."
+          : "Lock HUMAN POLICY above before using the rehearsal controls."}
       </p>
       <div className="flex flex-wrap gap-2">
         <Button
+          disabled={!policyLocked}
           onClick={() =>
             runQaAction("run_locked_demo", "Locked A/B/C demo", () => {
               const result = useAppStore.getState().runLockedDemo();
@@ -35,6 +38,7 @@ export function QaPanel() {
           Run locked A/B/C
         </Button>
         <Button
+          disabled={!policyLocked}
           onClick={() =>
             runQaAction("create_abc", "Create route-a/b/c", () => {
               const store = useAppStore.getState();
@@ -46,32 +50,45 @@ export function QaPanel() {
         >
           Create A/B/C
         </Button>
-        <Button onClick={() => applyNamed("a", "route-a")}>Preset A</Button>
-        <Button onClick={() => applyNamed("b", "route-b")}>Preset B</Button>
-        <Button onClick={() => applyNamed("c", "route-c")}>Preset C</Button>
         <Button
-          disabled={!selectedBranch}
+          disabled={!policyLocked}
+          onClick={() => applyNamed("a", "route-a")}
+        >
+          Preset A
+        </Button>
+        <Button
+          disabled={!policyLocked}
+          onClick={() => applyNamed("b", "route-b")}
+        >
+          Preset B
+        </Button>
+        <Button
+          disabled={!policyLocked}
+          onClick={() => applyNamed("c", "route-c")}
+        >
+          Preset C
+        </Button>
+        <Button
+          disabled={!policyLocked || !selectedBranch}
           onClick={() => {
             if (!selectedBranch) return;
             runQaAction(
               "run_simulation",
               `Simulate ${selectedBranch.name}`,
-              () =>
-                useAppStore.getState().runSimulation(selectedBranch.id),
+              () => useAppStore.getState().runSimulation(selectedBranch.id),
             );
           }}
         >
           Simulate
         </Button>
         <Button
-          disabled={!selectedBranch}
+          disabled={!policyLocked || !selectedBranch}
           onClick={() => {
             if (!selectedBranch) return;
             runQaAction(
               "validate_branch",
               `Validate ${selectedBranch.name}`,
-              () =>
-                useAppStore.getState().validateBranch(selectedBranch.id),
+              () => useAppStore.getState().validateBranch(selectedBranch.id),
             );
           }}
         >

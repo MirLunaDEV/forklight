@@ -20,13 +20,13 @@ export function ForklightApp() {
   const qaEnabled = isQaEnabled();
   const mobileTabs: readonly (readonly [MobileTab, string])[] = qaEnabled
     ? [
-        ["constraints", "Constraints"],
+        ["constraints", "Policy"],
         ["futures", "Futures"],
         ["metrics", "Metrics"],
         ["qa", "QA"],
       ]
     : [
-        ["constraints", "Constraints"],
+        ["constraints", "Policy"],
         ["futures", "Futures"],
         ["metrics", "Metrics"],
       ];

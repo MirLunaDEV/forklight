@@ -11,6 +11,19 @@
 
 ## 0. Product lock
 
+### Human policy amendment — 2026-08-27
+
+The project lead explicitly added one pre-exploration human boundary without changing the golden simulator or futures:
+
+```text
+human reviews and locks the fixed challenge policy
+→ agent exploration becomes available
+→ validator checks that human-owned policy
+→ human still approves the verified future for merge
+```
+
+The challenge values remain `+20%` minimum throughput, `+10%` maximum distance increase, zero protected moves, and congestion no worse than MAIN. Policy starts as `draft`; only the page UI can lock or edit it. There is no policy-mutation WebMCP tool. Experiment commands fail with `POLICY_NOT_LOCKED` while draft. Editing policy invalidates active validation proof, revokes approval, and removes merge capability.
+
 ### One sentence
 
 **Before an agent changes your live application, let it try several futures first.**
@@ -37,7 +50,7 @@ fresh verified branch
 ```
 
 The human does not merely click “yes” on a hidden action.  
-**The human changes which capability the live page exposes to the agent.**
+**The human defines the exploration boundary and later changes which capability the live page exposes to the agent.**
 
 ---
 
@@ -281,8 +294,8 @@ Implementation reference: current WebMCP draft at
 Use:
 
 ```ts
-document.modelContext.registerTool(toolDefinition, { signal })
-document.modelContext.getTools()
+document.modelContext.registerTool(toolDefinition, { signal });
+document.modelContext.getTools();
 ```
 
 Do not use:
@@ -331,7 +344,9 @@ merge_verified_branch → Merge approved future
 The four read tools use:
 
 ```ts
-annotations: { readOnlyHint: true }
+annotations: {
+  readOnlyHint: true;
+}
 ```
 
 ### Execute return values

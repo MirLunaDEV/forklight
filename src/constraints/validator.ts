@@ -1,6 +1,7 @@
 import { ratioDelta } from "../domain/metrics";
 import type {
   Branch,
+  ConstraintSet,
   SimulationMetrics,
   ValidationCheck,
   ValidationResult,
@@ -14,7 +15,8 @@ function formatPct(value: number): string {
 }
 
 export function countProtectedMoves(branch: Branch): number {
-  return branch.changes.filter((change) => change.touchedProtectedEntity).length;
+  return branch.changes.filter((change) => change.touchedProtectedEntity)
+    .length;
 }
 
 export function derivedDeltas(
@@ -26,7 +28,10 @@ export function derivedDeltas(
   congestionRatio: number;
 } {
   return {
-    throughputImprovement: ratioDelta(candidate.throughput, baseline.throughput),
+    throughputImprovement: ratioDelta(
+      candidate.throughput,
+      baseline.throughput,
+    ),
     distanceIncrease: ratioDelta(
       candidate.averageDistance,
       baseline.averageDistance,
@@ -44,6 +49,7 @@ export function validateMetrics(
   branch: Branch,
   candidate: SimulationMetrics,
   baseline: SimulationMetrics | null,
+  constraints: ConstraintSet = HARD_CONSTRAINTS,
 ): ValidationResult {
   const protectedMoved = countProtectedMoves(branch);
 
@@ -72,7 +78,7 @@ export function validateMetrics(
         },
         {
           id: "protected",
-          passed: protectedMoved === HARD_CONSTRAINTS.maxProtectedMoved,
+          passed: protectedMoved === constraints.maxProtectedMoved,
           actual: protectedMoved,
           required: "0",
           message: `Protected: ${protectedMoved} (need 0)`,
@@ -91,34 +97,38 @@ export function validateMetrics(
   const deltas = derivedDeltas(candidate, baseline);
 
   const throughputPass =
-    deltas.throughputImprovement >= HARD_CONSTRAINTS.minThroughputImprovement;
+    deltas.throughputImprovement >= constraints.minThroughputImprovement;
   const distancePass =
-    deltas.distanceIncrease <= HARD_CONSTRAINTS.maxDistanceIncrease;
-  const protectedPass = protectedMoved === HARD_CONSTRAINTS.maxProtectedMoved;
+    deltas.distanceIncrease <= constraints.maxDistanceIncrease;
+  const protectedPass = protectedMoved === constraints.maxProtectedMoved;
   const congestionPass =
-    candidate.congestionScore <= baseline.congestionScore;
+    deltas.congestionRatio <= constraints.maxCongestionRatio;
+
+  const throughputRequired = `≥ +${Math.round(constraints.minThroughputImprovement * 100)}%`;
+  const distanceRequired = `≤ +${Math.round(constraints.maxDistanceIncrease * 100)}%`;
+  const protectedRequired = String(constraints.maxProtectedMoved);
 
   const checks: ValidationCheck[] = [
     {
       id: "throughput",
       passed: throughputPass,
       actual: deltas.throughputImprovement,
-      required: "≥ +20%",
-      message: `Throughput: ${formatPct(deltas.throughputImprovement)}  (need ≥ +20%) ${throughputPass ? "✓" : "✗"}`,
+      required: throughputRequired,
+      message: `Throughput: ${formatPct(deltas.throughputImprovement)}  (need ${throughputRequired}) ${throughputPass ? "✓" : "✗"}`,
     },
     {
       id: "distance",
       passed: distancePass,
       actual: deltas.distanceIncrease,
-      required: "≤ +10%",
-      message: `Distance: ${formatPct(deltas.distanceIncrease)}  (need ≤ +10%) ${distancePass ? "✓" : "✗"}`,
+      required: distanceRequired,
+      message: `Distance: ${formatPct(deltas.distanceIncrease)}  (need ${distanceRequired}) ${distancePass ? "✓" : "✗"}`,
     },
     {
       id: "protected",
       passed: protectedPass,
       actual: protectedMoved,
-      required: "0",
-      message: `Protected: ${protectedMoved}  (need 0) ${protectedPass ? "✓" : "✗"}`,
+      required: protectedRequired,
+      message: `Protected: ${protectedMoved}  (need ${protectedRequired}) ${protectedPass ? "✓" : "✗"}`,
     },
     {
       id: "congestion",

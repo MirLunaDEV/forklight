@@ -9,6 +9,7 @@ export function TopBar() {
   const revision = useAppStore((state) => state.main.revision);
   const webmcpAvailable = useAppStore((state) => state.webmcpAvailable);
   const mergeRegisteredFor = useAppStore((state) => state.mergeRegisteredFor);
+  const policyStatus = useAppStore((state) => state.policy.status);
   const switchView = useAppStore((state) => state.switchView);
   const capabilityBanner = useAppStore((state) => state.capabilityBanner);
 
@@ -46,9 +47,10 @@ export function TopBar() {
           ))}
         </nav>
         <div className="hidden items-center gap-2 sm:flex">
-          {mergeRegisteredFor ? (
-            <Badge tone="info">Merge ready</Badge>
-          ) : null}
+          <Badge tone={policyStatus === "locked" ? "pass" : "warn"}>
+            Policy {policyStatus}
+          </Badge>
+          {mergeRegisteredFor ? <Badge tone="info">Merge ready</Badge> : null}
           <span
             className={cn(
               "inline-flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.14em]",

@@ -7,10 +7,12 @@ import {
   bootSnapshot,
   compareBranches as commandCompare,
   createBranch as commandCreate,
+  editPolicy as commandEditPolicy,
   ensureNamedBranch,
   inspectBranchPayload,
   inspectWorldPayload,
   mergeVerifiedBranch as commandMerge,
+  lockPolicy as commandLockPolicy,
   modifyRoute as commandModifyRoute,
   moveEntity as commandMoveEntity,
   revokeApproval as commandRevoke,
@@ -21,6 +23,7 @@ import {
 import type {
   Branch,
   CommandResult,
+  GoalPolicy,
   TimelineEvent,
   WorldState,
 } from "../domain/world";
@@ -37,6 +40,11 @@ export interface AppStore extends AppSnapshot {
   switchView: (view: ViewId) => void;
   setWebmcpAvailable: (value: boolean) => void;
   setCapabilityBanner: (value: boolean) => void;
+  lockPolicy: () => CommandResult<{ policy: GoalPolicy }>;
+  editPolicy: () => CommandResult<{
+    policy: GoalPolicy;
+    invalidatedBranches: number;
+  }>;
   createBranch: (name: string) => CommandResult<{ branch: Branch }>;
   moveEntity: (input: {
     branchId: string;
@@ -76,6 +84,7 @@ function cloneSnap(state: AppSnapshot): AppSnapshot {
     main: structuredClone(state.main),
     branches: structuredClone(state.branches),
     nextBranchSeq: state.nextBranchSeq,
+    policy: { ...state.policy },
     approval: { ...state.approval },
     mergeRegisteredFor: state.mergeRegisteredFor,
   };
@@ -97,6 +106,7 @@ function commit(set: (partial: Partial<AppStore>) => void, snap: AppSnapshot) {
     main: snap.main,
     branches: snap.branches,
     nextBranchSeq: snap.nextBranchSeq,
+    policy: snap.policy,
     approval: snap.approval,
     mergeRegisteredFor: snap.mergeRegisteredFor,
   });
@@ -116,6 +126,21 @@ export const useAppStore = create<AppStore>((set, get) => ({
   switchView: (view) => set({ selectedView: view }),
   setWebmcpAvailable: (value) => set({ webmcpAvailable: value }),
   setCapabilityBanner: (value) => set({ capabilityBanner: value }),
+  lockPolicy: () => {
+    const snap = cloneSnap(get());
+    const result = commandLockPolicy(snap);
+    if (result.ok) commit(set, snap);
+    return result;
+  },
+  editPolicy: () => {
+    const snap = cloneSnap(get());
+    const result = commandEditPolicy(snap);
+    if (result.ok) {
+      commit(set, snap);
+      set({ capabilityBanner: false });
+    }
+    return result;
+  },
   createBranch: (name) => {
     const snap = cloneSnap(get());
     const result = commandCreate(snap, name);
@@ -277,7 +302,20 @@ export const useAppStore = create<AppStore>((set, get) => ({
 }));
 
 export function getSnapshot(): AppSnapshot {
-  const { main, branches, nextBranchSeq, approval, mergeRegisteredFor } =
-    useAppStore.getState();
-  return { main, branches, nextBranchSeq, approval, mergeRegisteredFor };
+  const {
+    main,
+    branches,
+    nextBranchSeq,
+    policy,
+    approval,
+    mergeRegisteredFor,
+  } = useAppStore.getState();
+  return {
+    main,
+    branches,
+    nextBranchSeq,
+    policy,
+    approval,
+    mergeRegisteredFor,
+  };
 }

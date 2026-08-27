@@ -1,4 +1,5 @@
 import { derivedDeltas, validateMetrics } from "../constraints/validator";
+import { createGoalPolicy } from "../constraints/rules";
 import { inspectRoutes } from "../simulation/geometry";
 import { simulate } from "../simulation/simulator";
 import { makeBranch, isSimulationFresh } from "./branch";
@@ -8,6 +9,7 @@ import type {
   ApprovalState,
   Branch,
   CommandResult,
+  GoalPolicy,
   RouteWaypoint,
   WorldState,
 } from "./world";
@@ -18,6 +20,7 @@ export interface AppSnapshot {
   main: WorldState;
   branches: Branch[];
   nextBranchSeq: number;
+  policy: GoalPolicy;
   approval: ApprovalState;
   mergeRegisteredFor: string | null;
 }
@@ -29,6 +32,7 @@ export function bootSnapshot(): AppSnapshot {
     main,
     branches: [],
     nextBranchSeq: 1,
+    policy: createGoalPolicy(),
     approval: { branchId: null, approvedAt: null },
     mergeRegisteredFor: null,
   };
@@ -45,6 +49,47 @@ export function findBranch(
 
 function err<T>(code: string, message: string): CommandResult<T> {
   return { ok: false, error: { code, message } };
+}
+
+function requireLockedPolicy(
+  snapshot: AppSnapshot,
+): CommandResult<{ locked: true }> {
+  if (snapshot.policy.status !== "locked") {
+    return err(
+      "POLICY_NOT_LOCKED",
+      "The human must lock the goal policy before future exploration begins.",
+    );
+  }
+  return { ok: true, data: { locked: true } };
+}
+
+export function lockPolicy(
+  snapshot: AppSnapshot,
+): CommandResult<{ policy: GoalPolicy }> {
+  snapshot.policy = { ...snapshot.policy, status: "locked" };
+  return { ok: true, data: { policy: snapshot.policy } };
+}
+
+export function editPolicy(
+  snapshot: AppSnapshot,
+): CommandResult<{ policy: GoalPolicy; invalidatedBranches: number }> {
+  let invalidatedBranches = 0;
+  for (const branch of snapshot.branches) {
+    if (branch.status === "stale" || branch.status === "merged") continue;
+    if (branch.validationResult || branch.validatedMutationVersion !== null) {
+      invalidatedBranches += 1;
+    }
+    branch.validationResult = null;
+    branch.validatedMutationVersion = null;
+    branch.status = branch.metrics ? "simulated" : "draft";
+  }
+  snapshot.policy = { ...snapshot.policy, status: "draft" };
+  snapshot.approval = { branchId: null, approvedAt: null };
+  snapshot.mergeRegisteredFor = null;
+  return {
+    ok: true,
+    data: { policy: snapshot.policy, invalidatedBranches },
+  };
 }
 
 function requireMutableBranch(
@@ -90,6 +135,8 @@ export function createBranch(
   snapshot: AppSnapshot,
   name: string,
 ): CommandResult<{ branch: Branch }> {
+  const policy = requireLockedPolicy(snapshot);
+  if (!policy.ok) return policy;
   const trimmed = name.trim();
   if (!trimmed || trimmed.length > 40) {
     return err("INVALID_NAME", "Branch name must be 1–40 characters.");
@@ -109,6 +156,8 @@ export function moveEntity(
     position: { x: number; z: number };
   },
 ): CommandResult<{ branch: Branch; changeId: string }> {
+  const policy = requireLockedPolicy(snapshot);
+  if (!policy.ok) return policy;
   const found = requireMutableBranch(snapshot, input.branchId);
   if (!found.ok) return found;
   const branch = found.data;
@@ -164,6 +213,8 @@ export function modifyRoute(
     waypoints?: RouteWaypoint[];
   },
 ): CommandResult<{ branch: Branch; changeId: string }> {
+  const policy = requireLockedPolicy(snapshot);
+  if (!policy.ok) return policy;
   const found = requireMutableBranch(snapshot, input.branchId);
   if (!found.ok) return found;
   const branch = found.data;
@@ -204,7 +255,10 @@ export function modifyRoute(
       (item) => item.id === route.targetId,
     );
     if (!source || !target) {
-      return err("ROUTE_ENDPOINTS", "Route source or target entity is missing.");
+      return err(
+        "ROUTE_ENDPOINTS",
+        "Route source or target entity is missing.",
+      );
     }
     const first = input.waypoints[0];
     const last = input.waypoints[input.waypoints.length - 1];
@@ -266,6 +320,8 @@ export function runSimulation(
   snapshot: AppSnapshot,
   branchId: string,
 ): CommandResult<{ branch: Branch }> {
+  const policy = requireLockedPolicy(snapshot);
+  if (!policy.ok) return policy;
   const found = requireMutableBranch(snapshot, branchId);
   if (!found.ok) return found;
   const branch = found.data;
@@ -280,6 +336,8 @@ export function validateBranch(
   snapshot: AppSnapshot,
   branchId: string,
 ): CommandResult<{ branch: Branch }> {
+  const policy = requireLockedPolicy(snapshot);
+  if (!policy.ok) return policy;
   const found = requireMutableBranch(snapshot, branchId);
   if (!found.ok) return found;
   const branch = found.data;
@@ -293,6 +351,7 @@ export function validateBranch(
     branch,
     branch.metrics!,
     snapshot.main.baselineMetrics,
+    snapshot.policy,
   );
   branch.validationResult = result;
   branch.validatedMutationVersion = branch.mutationVersion;
@@ -353,8 +412,11 @@ export function approveBranch(
   branchId: string,
   at = Date.now(),
 ): CommandResult<{ branch: Branch }> {
+  const policy = requireLockedPolicy(snapshot);
+  if (!policy.ok) return policy;
   const branch = findBranch(snapshot, branchId);
-  if (!branch) return err("BRANCH_NOT_FOUND", `No branch with id "${branchId}".`);
+  if (!branch)
+    return err("BRANCH_NOT_FOUND", `No branch with id "${branchId}".`);
   if (
     branch.status === "stale" ||
     branch.baseRevision !== snapshot.main.revision
@@ -397,8 +459,11 @@ export function mergeVerifiedBranch(
   snapshot: AppSnapshot,
   branchId: string,
 ): CommandResult<{ main: WorldState; branch: Branch }> {
+  const policy = requireLockedPolicy(snapshot);
+  if (!policy.ok) return policy;
   const branch = findBranch(snapshot, branchId);
-  if (!branch) return err("BRANCH_NOT_FOUND", `No branch with id "${branchId}".`);
+  if (!branch)
+    return err("BRANCH_NOT_FOUND", `No branch with id "${branchId}".`);
 
   if (snapshot.mergeRegisteredFor !== branch.id) {
     return err(
@@ -553,7 +618,9 @@ export function applyLockedFutureC(
   if (!moved.ok) return moved;
   const branch = findBranch(snapshot, branchId);
   if (!branch) return err("BRANCH_NOT_FOUND", "Branch disappeared.");
-  const north = branch.worldState.routes.find((route) => route.id === "r-north");
+  const north = branch.worldState.routes.find(
+    (route) => route.id === "r-north",
+  );
   if (!north) return err("ROUTE_NOT_FOUND", "r-north missing.");
   const waypoints = north.waypoints.map((point, index) =>
     index === 2

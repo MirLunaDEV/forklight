@@ -52,6 +52,7 @@ export function abortMergeCapability(): void {
 
 function shouldExposeMerge(): { branchId: string } | null {
   const state = useAppStore.getState();
+  if (state.policy.status !== "locked") return null;
   const branchId = state.mergeRegisteredFor;
   if (!branchId) return null;
   const branch = state.branches.find((item) => item.id === branchId);
@@ -101,9 +102,7 @@ async function registerMergeTool(
         inputSchema: TOOL_SCHEMAS.merge_verified_branch,
         annotations: { readOnlyHint: false },
         execute: async (input) => {
-          const id = String(
-            (input as { branchId?: unknown }).branchId ?? "",
-          );
+          const id = String((input as { branchId?: unknown }).branchId ?? "");
           return runTool(MERGE_TOOL_NAME, `merge ${id}`, () => {
             const result = useAppStore.getState().mergeVerifiedBranch(id);
             if (!result.ok) return result;

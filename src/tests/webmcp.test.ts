@@ -74,6 +74,7 @@ function installMockModelContext(options: MockOptions = {}) {
 }
 
 async function createAndApproveLockedB() {
+  expect(useAppStore.getState().lockPolicy().ok).toBe(true);
   const demo = useAppStore.getState().runLockedDemo();
   expect(demo.ok).toBe(true);
   if (!demo.ok) throw new Error("locked demo did not initialize");
@@ -108,6 +109,7 @@ describe("WebMCP registration", () => {
   it("keeps manual state usable when document.modelContext is unavailable", async () => {
     expect(isModelContextAvailable()).toBe(false);
     expect(await registerStaticTools()).toBe(false);
+    expect(useAppStore.getState().lockPolicy().ok).toBe(true);
     const created = useAppStore.getState().createBranch("manual-future");
     expect(created.ok).toBe(true);
   });
@@ -115,9 +117,65 @@ describe("WebMCP registration", () => {
   it("registers exactly nine static tools and no merge tool at boot", async () => {
     const mock = installMockModelContext();
     expect(await registerStaticTools()).toBe(true);
-    expect([...mock.tools.keys()].sort()).toEqual([...STATIC_TOOL_NAMES].sort());
+    expect([...mock.tools.keys()].sort()).toEqual(
+      [...STATIC_TOOL_NAMES].sort(),
+    );
     expect(mock.tools).toHaveLength(9);
     expect(mock.tools.has(MERGE_TOOL_NAME)).toBe(false);
+    expect(STATIC_TOOL_NAMES.some((name) => name.includes("policy"))).toBe(
+      false,
+    );
+  });
+
+  it("inspect_constraints exposes the current human-owned policy", async () => {
+    const mock = installMockModelContext();
+    await registerStaticTools();
+    const inspect = mock.tools.get("inspect_constraints")!;
+    const draft = await inspect.execute({});
+    expect(draft).toMatchObject({
+      ok: true,
+      explorationEnabled: false,
+      policy: {
+        status: "draft",
+        definedBy: "human",
+        minThroughputImprovement: 0.2,
+        maxDistanceIncrease: 0.1,
+        maxProtectedMoved: 0,
+        maxCongestionRatio: 1,
+      },
+    });
+
+    expect(useAppStore.getState().lockPolicy().ok).toBe(true);
+    const locked = await inspect.execute({});
+    expect(locked).toMatchObject({
+      ok: true,
+      explorationEnabled: true,
+      policy: { status: "locked", definedBy: "human" },
+    });
+  });
+
+  it("returns POLICY_NOT_LOCKED before human policy lock, then allows exploration", async () => {
+    const mock = installMockModelContext();
+    await registerStaticTools();
+    const create = mock.tools.get("create_branch")!;
+    const blocked = await create.execute({ name: "route-a" });
+    expect(blocked).toEqual({
+      ok: false,
+      error: {
+        code: "POLICY_NOT_LOCKED",
+        message:
+          "The human must lock the goal policy before future exploration begins.",
+      },
+    });
+    expect(useAppStore.getState().branches).toEqual([]);
+
+    expect(useAppStore.getState().lockPolicy().ok).toBe(true);
+    const created = await create.execute({ name: "route-a" });
+    expect(created).toMatchObject({
+      ok: true,
+      name: "route-a",
+      status: "draft",
+    });
   });
 
   it("uses the exact titles and marks only the four read tools read-only", async () => {
@@ -161,7 +219,9 @@ describe("WebMCP registration", () => {
     expect(typeof result).toBe("object");
     const timeline = useAppStore.getState().timeline;
     expect(timeline.map((event) => event.status)).toEqual(["start", "success"]);
-    expect(timeline.every((event) => event.tool === "inspect_world")).toBe(true);
+    expect(timeline.every((event) => event.tool === "inspect_world")).toBe(
+      true,
+    );
   });
 
   it("returns a structured error and never mutates MAIN for invalid input", async () => {
@@ -234,6 +294,27 @@ describe("WebMCP registration", () => {
     expect(mock.tools.has(MERGE_TOOL_NAME)).toBe(false);
   });
 
+  it("editing human policy invalidates proof, approval, and merge capability", async () => {
+    const mock = installMockModelContext();
+    await registerStaticTools();
+    const branchId = await createAndApproveLockedB();
+    expect(mock.tools.has(MERGE_TOOL_NAME)).toBe(true);
+
+    const edited = useAppStore.getState().editPolicy();
+    expect(edited.ok).toBe(true);
+    await syncMergeCapability();
+
+    const state = useAppStore.getState();
+    const branch = state.branches.find((item) => item.id === branchId);
+    expect(state.policy.status).toBe("draft");
+    expect(branch?.validationResult).toBeNull();
+    expect(branch?.validatedMutationVersion).toBeNull();
+    expect(branch?.status).toBe("simulated");
+    expect(state.approval.branchId).toBeNull();
+    expect(state.mergeRegisteredFor).toBeNull();
+    expect(mock.tools.has(MERGE_TOOL_NAME)).toBe(false);
+  });
+
   it("merges approved B, increments MAIN, stales peers, and removes merge", async () => {
     const mock = installMockModelContext();
     await registerStaticTools();
@@ -248,9 +329,9 @@ describe("WebMCP registration", () => {
     await syncMergeCapability();
     const state = useAppStore.getState();
     expect(state.main.revision).toBe(2);
-    expect(state.branches.find((branch) => branch.id === branchId)?.status).toBe(
-      "merged",
-    );
+    expect(
+      state.branches.find((branch) => branch.id === branchId)?.status,
+    ).toBe("merged");
     expect(
       state.branches
         .filter((branch) => branch.id !== branchId)
@@ -276,7 +357,9 @@ describe("WebMCP registration", () => {
     unregisterStaticTools();
     await expect(
       registerStaticTools({ timeoutMs: 20, pollMs: 2 }),
-    ).rejects.toMatchObject({ code: "WEBMCP_TOOL_REMOVAL_TIMEOUT" });
+    ).rejects.toMatchObject({
+      code: "WEBMCP_TOOL_REMOVAL_TIMEOUT",
+    });
     expect(mock.attempts).toHaveLength(9);
   });
 
@@ -289,7 +372,9 @@ describe("WebMCP registration", () => {
     abortMergeCapability();
     await expect(
       syncMergeCapability({ timeoutMs: 20, pollMs: 2 }),
-    ).rejects.toMatchObject({ code: "WEBMCP_TOOL_REMOVAL_TIMEOUT" });
+    ).rejects.toMatchObject({
+      code: "WEBMCP_TOOL_REMOVAL_TIMEOUT",
+    });
     expect(
       mock.attempts.filter((name) => name === MERGE_TOOL_NAME),
     ).toHaveLength(1);

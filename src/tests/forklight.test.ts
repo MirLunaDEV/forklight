@@ -5,7 +5,7 @@ import {
   applyLockedFutureB,
   applyLockedFutureC,
   approveBranch,
-  bootSnapshot,
+  bootLockedSnapshot as bootSnapshot,
   compareBranches,
   createBranch,
   mergeVerifiedBranch,
@@ -15,7 +15,11 @@ import {
   serializeable,
   validateBranch,
 } from "./helpers";
-import { availableRoutes, getBarriers, routeBlockedBy } from "../simulation/geometry";
+import {
+  availableRoutes,
+  getBarriers,
+  routeBlockedBy,
+} from "../simulation/geometry";
 import { simulate } from "../simulation/simulator";
 import { LOCKED_WORLD } from "../domain/initialWorld";
 import { HARD_CONSTRAINTS } from "../constraints/rules";
@@ -46,9 +50,11 @@ describe("branch isolation", () => {
     });
     expect(moved.ok).toBe(true);
     expect(JSON.stringify(snap.main)).toBe(mainBefore);
-    expect(JSON.stringify(snap.branches.find((item) => item.id === b.data.branch.id)?.worldState)).toBe(
-      bBefore,
-    );
+    expect(
+      JSON.stringify(
+        snap.branches.find((item) => item.id === b.data.branch.id)?.worldState,
+      ),
+    ).toBe(bBefore);
     const north = snap.branches
       .find((item) => item.id === a.data.branch.id)
       ?.worldState.entities.find((item) => item.id === "barrier-north");
@@ -193,9 +199,13 @@ describe("simulator", () => {
     expect(routeBlockedBy(main, bootBarriers)).toEqual([]);
 
     const opened = structuredClone(LOCKED_WORLD);
-    const northBarrier = opened.entities.find((item) => item.id === "barrier-north")!;
+    const northBarrier = opened.entities.find(
+      (item) => item.id === "barrier-north",
+    )!;
     northBarrier.position = { x: 11, y: 0, z: 11.3 };
-    const southBarrier = opened.entities.find((item) => item.id === "barrier-south")!;
+    const southBarrier = opened.entities.find(
+      (item) => item.id === "barrier-south",
+    )!;
     southBarrier.position = { x: 11, y: 0, z: 3.8 };
     expect(routeBlockedBy(north, getBarriers(opened))).toEqual([]);
     expect(routeBlockedBy(south, getBarriers(opened))).toEqual([]);
@@ -265,7 +275,9 @@ describe("validator", () => {
     validateBranch(snap, a.data.branch.id);
     validateBranch(snap, b.data.branch.id);
     validateBranch(snap, c.data.branch.id);
-    const verified = snap.branches.filter((branch) => branch.status === "verified");
+    const verified = snap.branches.filter(
+      (branch) => branch.status === "verified",
+    );
     expect(verified.map((branch) => branch.name)).toEqual(["route-b"]);
   });
 });
