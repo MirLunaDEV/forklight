@@ -2,7 +2,20 @@
 
 GitHub CLI is installed, but no GitHub account is authenticated in the submission workspace. A free GitHub account is sufficient; no paid plan is required.
 
-Run these commands from the final extracted `Forklight` directory after reviewing the repository contents:
+Run these commands from the final `Forklight` directory after reviewing the repository contents.
+
+If you are working in the original Codex project, it is already a Git repository and already contains the release tag. Skip this initialization block.
+
+If you extracted the Git-free handoff ZIP, initialize its repository first:
+
+```powershell
+git init -b main
+git add --all
+git commit -m "Forklight WebMCP Challenge submission v1"
+git tag -a webmcp-challenge-submission-v1 -m "Forklight WebMCP Challenge submission v1"
+```
+
+Then authenticate and publish:
 
 ```powershell
 gh auth login
