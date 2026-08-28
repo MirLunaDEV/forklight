@@ -6,14 +6,13 @@
 |---|---|
 | Project | Forklight |
 | Tagline | Try the future before you merge it. |
-| Verified submission source commit | `47ff469c6a3737233f5dd86c3caeedad754f931a` |
-| Local release tag | `webmcp-challenge-submission-v1` |
-| Public repository | USER ACTION REQUIRED — GitHub CLI is not authenticated |
+| Verified release tag | `webmcp-challenge-submission-v1` |
+| Public repository | <https://github.com/MirLunaDEV/forklight> |
 | Live app | <https://forklight.kimth06230724.chatgpt.site/> |
 | Live deployment | Active, public, Sites version 3 |
 | License | MIT |
 
-The release tag is created locally after this handoff record is committed. It identifies the complete feature-frozen tree including final submission metadata. Product code remains the verified implementation from commit `6264701757061aa45ed2081c2699118078eb5cdd`; the later commits curate documentation and submission assets only.
+The release tag identifies the complete feature-frozen tree including final submission metadata. Product code remained frozen during the final publication pass; only documentation and submission metadata were updated.
 
 ## Verification
 
@@ -24,7 +23,7 @@ The release tag is created locally after this handoff record is committed. It id
 - Production build: PASS
 - Secret/local-path/publication audit: PASS
 - Clean committed-tree clone: PASS — install, typecheck, 47 tests, build
-- Public GitHub clone: pending GitHub authentication/publication
+- Public GitHub clone: pending final publication verification
 
 ## Production WebMCP
 
@@ -51,8 +50,7 @@ The release tag is created locally after this handoff record is committed. It id
 
 ## Remaining human-only actions
 
-1. Authenticate GitHub, publish the public repository and local release tag, and perform the public-URL clean clone check.
-2. Confirm submitter type, country, eligibility, and legal age.
-3. Capture/select the Devpost image gallery because automated WebGL screenshots timed out.
-4. Record and upload a public YouTube video under three minutes with audio.
-5. Review personal fields and press Devpost Submit before the deadline.
+1. Confirm submitter type, country, eligibility, and legal age.
+2. Capture/select the Devpost image gallery because automated WebGL screenshots timed out.
+3. Record and upload a public YouTube video under three minutes with audio.
+4. Review personal fields and press Devpost Submit before the deadline.

@@ -1,6 +1,11 @@
-# GitHub Publish Steps
+# GitHub Publication Record
 
-GitHub CLI is installed, but no GitHub account is authenticated in the submission workspace. A free GitHub account is sufficient; no paid plan is required.
+**Public repository:** <https://github.com/MirLunaDEV/forklight>  
+**Release tag:** `webmcp-challenge-submission-v1`
+
+The repository was published through the connected GitHub account. A free GitHub account is sufficient; no paid plan is required.
+
+## Optional manual reproduction
 
 Run these commands from the final `Forklight` directory after reviewing the repository contents.
 
@@ -15,7 +20,7 @@ git commit -m "Forklight WebMCP Challenge submission v1"
 git tag -a webmcp-challenge-submission-v1 -m "Forklight WebMCP Challenge submission v1"
 ```
 
-Then authenticate and publish:
+To reproduce publication manually with GitHub CLI:
 
 ```powershell
 gh auth login
@@ -27,7 +32,7 @@ gh repo view --web
 
 Before creating the repository, verify that `gh repo view forklight` does not identify an unrelated repository you own. Do not overwrite an unrelated repository.
 
-After publishing:
+Publication checks:
 
 1. Confirm the repository visibility is **Public**.
 2. Confirm the default branch is `main`.

@@ -2,7 +2,7 @@
 
 **Status:** PASS  
 **Executed:** 2026-08-28 01:38:43 +09:00  
-**Product code commit under test:** `6264701757061aa45ed2081c2699118078eb5cdd`
+**Verified release tag:** `webmcp-challenge-submission-v1`
 
 ## Environment
 

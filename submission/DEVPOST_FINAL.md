@@ -77,7 +77,7 @@ WebMCP made it possible to express that model directly in the browser document. 
 
 ## Public code repository
 
-USER ACTION REQUIRED — GitHub authentication is not available in the submission workspace. Publish with `submission/GITHUB_PUBLISH_STEPS.md`, then paste the resulting public repository URL here.
+<https://github.com/MirLunaDEV/forklight>
 
 ## Testing instructions
 
@@ -106,7 +106,7 @@ No credentials or paid API are required. Full copy-paste instructions are in `do
 **Agents / clients tested:**
 
 - OpenAI Codex in-app browser with page-defined WebMCP tools
-- Vitest test harness with a contract-faithful `document.modelContext` mock
+- Google Chrome with WebMCP enabled (Model Context and tool-surface verification)
 
 **AI tools leveraged:**
 
