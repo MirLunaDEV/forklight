@@ -41,4 +41,5 @@ Publication checks:
 5. Public source clean clone and build — PASS; see `docs/CLEAN_CLONE_VERIFICATION.md`.
 6. Final GitHub URL recorded in `submission/DEVPOST_FINAL.md` — PASS.
 
-The local source freeze tag is `webmcp-challenge-submission-v1`. The final command above publishes that immutable tag after the repository has been created.
+The local source freeze tag is `webmcp-challenge-submission-v1`. The final command above publishes that release tag after the repository has been created.
+
