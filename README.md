@@ -156,4 +156,3 @@ Follow [docs/JUDGE_TESTING.md](docs/JUDGE_TESTING.md) for the complete copy-past
 ## License
 
 Forklight is available under the [MIT License](LICENSE).
-
