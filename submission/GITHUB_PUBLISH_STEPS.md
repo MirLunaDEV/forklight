@@ -42,4 +42,3 @@ Publication checks:
 6. Final GitHub URL recorded in `submission/DEVPOST_FINAL.md` — PASS.
 
 The local source freeze tag is `webmcp-challenge-submission-v1`. The final command above publishes that release tag after the repository has been created.
-
