@@ -19,9 +19,7 @@ export function TopBar() {
         <div className="flex items-center gap-2">
           <GitFork className="size-4 text-capability" strokeWidth={1.75} />
           <div className="leading-tight">
-            <div className="font-display text-sm tracking-[0.18em] text-fg">
-              FORKLIGHT
-            </div>
+            <div className="font-display text-sm tracking-[0.18em] text-fg">FORKLIGHT</div>
             <div className="hidden text-[10px] uppercase tracking-[0.16em] text-muted sm:block">
               Try the future before you merge it
             </div>
@@ -37,9 +35,7 @@ export function TopBar() {
           {branches.map((branch) => (
             <ViewTab
               key={branch.id}
-              active={
-                selectedView === branch.id || selectedView === branch.name
-              }
+              active={selectedView === branch.id || selectedView === branch.name}
               onClick={() => switchView(branch.id)}
               label={branch.name}
               hint={branch.status}
@@ -47,19 +43,24 @@ export function TopBar() {
           ))}
         </nav>
         <div className="hidden items-center gap-2 sm:flex">
-          <Badge tone={policyStatus === "locked" ? "pass" : "warn"}>
-            Policy {policyStatus}
-          </Badge>
+          <Badge tone={policyStatus === "locked" ? "pass" : "warn"}>Policy {policyStatus}</Badge>
           {mergeRegisteredFor ? <Badge tone="info">Merge ready</Badge> : null}
-          <span
-            className={cn(
-              "inline-flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.14em]",
-              webmcpAvailable ? "text-pass" : "text-muted",
-            )}
-          >
-            <Radio className="size-3.5" />
-            WebMCP {webmcpAvailable ? "live" : "unavailable"}
-          </span>
+          {webmcpAvailable ? (
+            <span className="inline-flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-pass">
+              <Radio className="size-3.5" />
+              WebMCP live
+            </span>
+          ) : (
+            <span
+              className={cn(
+                "inline-flex max-w-[270px] items-start gap-1.5 font-mono text-[9px] leading-snug text-muted",
+              )}
+              title="Chrome testing flag: chrome://flags/#enable-webmcp-testing"
+            >
+              <Radio className="mt-0.5 size-3.5 shrink-0" />
+              WebMCP unavailable — open in ChatGPT or enable WebMCP testing in Chrome.
+            </span>
+          )}
         </div>
       </div>
       {capabilityBanner ? (
@@ -90,14 +91,10 @@ function ViewTab({
       onClick={onClick}
       className={cn(
         "flex h-11 min-w-11 shrink-0 flex-col justify-center rounded-md px-3 text-left",
-        active
-          ? "bg-surface-2 text-fg"
-          : "text-muted hover:bg-surface-2 hover:text-fg",
+        active ? "bg-surface-2 text-fg" : "text-muted hover:bg-surface-2 hover:text-fg",
       )}
     >
-      <span className="font-mono text-[11px] uppercase tracking-[0.12em]">
-        {label}
-      </span>
+      <span className="font-mono text-[11px] uppercase tracking-[0.12em]">{label}</span>
       <span className="text-[10px] text-muted">{hint}</span>
     </button>
   );

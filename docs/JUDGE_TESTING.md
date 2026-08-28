@@ -8,6 +8,7 @@ Live app: <https://forklight.kimth06230724.chatgpt.site/>
 
 - Header shows `MAIN rev 1`.
 - HUMAN POLICY shows `Draft policy` and `Exploration paused`.
+- Four editable controls show defaults `20 / 10 / 0 / 100`.
 - `document.modelContext` exists in a WebMCP-capable browser.
 - `getTools()` returns exactly nine static tools.
 - `merge_verified_branch` is absent.
@@ -35,14 +36,15 @@ Expected structured result:
 
 Call `inspect_world` again. MAIN must still be revision 1 and no branch may have been created.
 
-## Human step — lock policy
+## Human step — choose and lock policy
 
-In the right-side HUMAN POLICY panel, click **Lock policy**.
+In the right-side HUMAN POLICY panel, change **Maximum route distance increase** from `10` to `6`, then click **Lock policy**.
 
 Expected UI:
 
 - `Policy locked`
 - `Agent exploration enabled`
+- All four chosen values remain visible and read-only
 
 There is intentionally no agent tool that locks or edits policy.
 
@@ -82,9 +84,9 @@ Run `run_simulation` and `validate_branch` for all three futures, then call `com
 
 | Future | Expected status | Decisive result |
 |---|---|---|
-| route-a | FAIL | distance increases about 10.5%, above the 10% limit |
+| route-a | FAIL | distance increases about 10.5%, above the 6% limit |
 | route-b | VERIFIED | all four HUMAN POLICY checks pass |
-| route-c | FAIL | protected equipment moved = 1 |
+| route-c | FAIL | protected equipment moved = 1; exact distance is also slightly above 6% |
 
 Expected metric family:
 
@@ -128,7 +130,7 @@ Expected final state:
 ## Copy-paste natural-language prompt
 
 ```text
-Inspect the current Forklight warehouse and its human-owned constraints. Before policy is locked, try to create a future named pre-lock-check and confirm the structured POLICY_NOT_LOCKED result and that MAIN remains revision 1. Then stop and ask me to click Lock policy.
+Inspect the current Forklight warehouse and its human-owned constraints. Before policy is locked, try to create a future named pre-lock-check and confirm the structured POLICY_NOT_LOCKED result and that MAIN remains revision 1. Then stop and ask me to set the maximum route distance increase to 6% and click Lock policy.
 
 After I confirm policy is locked, create three isolated futures named route-a, route-b, and route-c. Do not modify MAIN.
 

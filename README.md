@@ -26,7 +26,7 @@ Agent tools often expose live mutation immediately. Forklight demonstrates a saf
 ## Human-agent workflow
 
 1. MAIN starts at revision 1.
-2. The human reviews and locks HUMAN POLICY.
+2. The human chooses the HUMAN POLICY thresholds and locks them.
 3. The agent creates and edits isolated futures.
 4. The simulator produces deterministic metrics.
 5. The validator checks the human-owned policy.
@@ -38,16 +38,16 @@ The agent cannot lock or edit policy and cannot approve a future.
 
 ## HUMAN POLICY
 
-Policy begins in `draft`. Until the human clicks **Lock policy**, experiment tools return `POLICY_NOT_LOCKED` and MAIN remains unchanged.
+Policy begins in `draft`. The page UI lets the human edit all four thresholds before clicking **Lock policy**. Until then, experiment tools return `POLICY_NOT_LOCKED` and MAIN remains unchanged.
 
-| Boundary | Requirement |
+| Boundary | Default requirement |
 |---|---:|
 | Throughput improvement | at least `+20%` versus MAIN |
 | Average planned distance | no more than `+10%` versus MAIN |
 | Protected equipment moves | exactly `0` |
 | Congestion | no worse than MAIN |
 
-Editing policy invalidates active verification, revokes approval, and removes merge capability.
+The default A/B/C scenario remains unchanged. For a visible policy demo, the human can tighten maximum distance from `10%` to `6%` before locking: A still fails while B still passes. At `5%`, B fails distance after revalidation. Editing or changing policy invalidates active verification, preserves fresh world metrics, revokes approval, and removes merge capability.
 
 ## Why WebMCP matters
 
@@ -141,7 +141,7 @@ npm run lint
 npm run build
 ```
 
-The final suite contains 47 tests covering branch isolation, deterministic A/B/C metrics, HUMAN POLICY gates, proof invalidation, human approval, dynamic capability registration, merge state transitions, WebMCP structured results, QA isolation, and fallback behavior when WebMCP is unavailable.
+The final suite contains 62 tests covering branch isolation, deterministic A/B/C metrics, editable HUMAN POLICY boundaries, input validation, proof invalidation, human approval, dynamic capability registration, merge state transitions, WebMCP structured results, QA isolation, and fallback behavior when WebMCP is unavailable.
 
 See [Final Verification](docs/FINAL_VERIFICATION.md) and [Production WebMCP Verification](docs/PRODUCTION_WEBMCP_VERIFICATION.md).
 

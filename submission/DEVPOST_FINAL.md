@@ -18,9 +18,9 @@ Forklight uses a warehouse because routes, barriers, throughput, distance, conge
 
 ### What Forklight does
 
-Forklight begins with MAIN revision 1 and a HUMAN POLICY in draft. The policy belongs to the human and defines four boundaries: throughput must improve by at least 20%, planned distance may increase by at most 10%, protected equipment cannot move, and congestion cannot be worse than MAIN.
+Forklight begins with MAIN revision 1 and a HUMAN POLICY in draft. The human chooses and locks four thresholds; the defaults require at least 20% more throughput, at most 10% more planned distance, zero protected-equipment moves, and congestion no worse than MAIN.
 
-Before the human locks policy, the agent cannot create or modify a future. After the human clicks Lock policy, the agent can create isolated branches, move barriers, enable routes, run a deterministic simulation, validate the result, and compare futures without touching MAIN.
+Before the human locks policy, the agent cannot create or modify a future. In the demo, the human can tighten maximum distance from 10% to 6% before locking; A still fails while B still passes, and at 5% B fails after revalidation. After the human clicks Lock policy, the agent can create isolated branches, move barriers, enable routes, run a deterministic simulation, validate the result, and compare futures without touching MAIN.
 
 The demonstration creates three futures. A improves throughput but fails the distance limit. B passes all four checks and is the only verified future. C matches B's routing improvement but moves a protected scanner, so it fails the protected-equipment rule. The agent cannot approve any branch. When the human clicks Approve for Merge on B, the page dynamically exposes `merge_verified_branch`. After the agent invokes it, MAIN advances to revision 2, B becomes merged, A and C become stale, and the merge tool disappears.
 
@@ -40,7 +40,7 @@ Forklight is a React and TypeScript application built with Vite. Zustand stores 
 
 The human UI and WebMCP tools call the same domain commands, so there is no agent-only mutation path. WebMCP registrations use AbortController-based lifecycles and `document.modelContext.getTools()` polling so the dynamic merge capability can be removed and re-registered safely without duplicate names or unbounded waits.
 
-Vitest covers branch isolation, deterministic A/B/C metrics, policy gating, proof invalidation, approval and revoke behavior, dynamic capability exposure, structured tool results, merge transitions, QA isolation, and unavailable-WebMCP fallback. The final suite contains 47 passing tests, and the full workflow was also exercised through the real page-defined tools in the OpenAI Codex in-app browser.
+Vitest covers branch isolation, deterministic A/B/C metrics, editable policy boundaries, policy gating, proof invalidation, approval and revoke behavior, dynamic capability exposure, structured tool results, merge transitions, QA isolation, and unavailable-WebMCP fallback. The final suite contains 62 passing tests, and the full workflow was also exercised through the real page-defined tools in the OpenAI Codex in-app browser.
 
 ### Challenges I faced
 
@@ -83,13 +83,13 @@ WebMCP made it possible to express that model directly in the browser document. 
 
 1. Open the live URL in a WebMCP-capable browser. Confirm MAIN rev 1, HUMAN POLICY draft, nine tools, and no merge tool.
 2. Before locking policy, ask the agent to create a branch. Expect `POLICY_NOT_LOCKED` and unchanged MAIN.
-3. Click **Lock policy**.
+3. Change **Maximum route distance increase** from 10% to 6%, then click **Lock policy**.
 4. Ask the agent to create route-a, route-b, and route-c using the exact operations in `docs/JUDGE_TESTING.md`; simulate, validate, and compare them.
 5. Confirm A fails distance, B alone is verified, and C fails protected equipment.
 6. Click **Approve for Merge** on B. Confirm `merge_verified_branch` appears.
 7. Ask the agent to merge B. Confirm MAIN rev 2, B merged, A/C stale, and the merge tool removed.
 
-No credentials or paid API are required. Full copy-paste instructions are in `docs/JUDGE_TESTING.md`.
+No credentials or paid API are required. If a normal browser shows WebMCP unavailable, open the app in ChatGPT or enable WebMCP testing in Chrome. Full copy-paste instructions are in `docs/JUDGE_TESTING.md`.
 
 ## Additional info
 

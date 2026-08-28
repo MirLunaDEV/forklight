@@ -18,6 +18,10 @@ function argString(value: unknown): string {
   return typeof value === "string" ? value : "";
 }
 
+function formatPercent(value: number): string {
+  return `${Math.round(value * 100)}%`;
+}
+
 function staticTools() {
   return [
     {
@@ -42,17 +46,18 @@ function staticTools() {
       execute: async () =>
         runTool("inspect_constraints", "inspect human policy", () => {
           const state = useAppStore.getState();
+          const policy = { ...state.policy };
           return {
-            policy: { ...state.policy },
+            policy,
             explorationEnabled: state.policy.status === "locked",
             protectedEquipment: state.main.entities
               .filter((entity) => entity.protected)
               .map((entity) => ({ id: entity.id, name: entity.name })),
             readable: [
-              "Throughput must improve by at least 20% versus MAIN baseline.",
-              "Average planned travel distance may increase by at most 10%.",
-              "Protected equipment must not be moved (count stays 0).",
-              "Congestion must be no worse than the MAIN baseline.",
+              `Throughput must improve by at least ${formatPercent(policy.minThroughputImprovement)} versus MAIN baseline.`,
+              `Average planned travel distance may increase by at most ${formatPercent(policy.maxDistanceIncrease)}.`,
+              `Protected-equipment moves may not exceed ${policy.maxProtectedMoved}.`,
+              `Congestion may not exceed ${formatPercent(policy.maxCongestionRatio)} of the MAIN baseline.`,
             ],
           };
         }),

@@ -6,7 +6,7 @@ import type {
   ValidationCheck,
   ValidationResult,
 } from "../domain/world";
-import { HARD_CONSTRAINTS } from "./rules";
+import { DEFAULT_POLICY_CONSTRAINTS } from "./rules";
 
 function formatPct(value: number): string {
   if (!Number.isFinite(value)) return "n/a";
@@ -49,7 +49,7 @@ export function validateMetrics(
   branch: Branch,
   candidate: SimulationMetrics,
   baseline: SimulationMetrics | null,
-  constraints: ConstraintSet = HARD_CONSTRAINTS,
+  constraints: ConstraintSet = DEFAULT_POLICY_CONSTRAINTS,
 ): ValidationResult {
   const protectedMoved = countProtectedMoves(branch);
 
@@ -78,7 +78,7 @@ export function validateMetrics(
         },
         {
           id: "protected",
-          passed: protectedMoved === constraints.maxProtectedMoved,
+          passed: protectedMoved <= constraints.maxProtectedMoved,
           actual: protectedMoved,
           required: "0",
           message: `Protected: ${protectedMoved} (need 0)`,
@@ -100,7 +100,7 @@ export function validateMetrics(
     deltas.throughputImprovement >= constraints.minThroughputImprovement;
   const distancePass =
     deltas.distanceIncrease <= constraints.maxDistanceIncrease;
-  const protectedPass = protectedMoved === constraints.maxProtectedMoved;
+  const protectedPass = protectedMoved <= constraints.maxProtectedMoved;
   const congestionPass =
     deltas.congestionRatio <= constraints.maxCongestionRatio;
 

@@ -1,5 +1,8 @@
 import { derivedDeltas, validateMetrics } from "../constraints/validator";
-import { createGoalPolicy } from "../constraints/rules";
+import {
+  createGoalPolicy,
+  POLICY_CONSTRAINT_LIMITS,
+} from "../constraints/rules";
 import { inspectRoutes } from "../simulation/geometry";
 import { simulate } from "../simulation/simulator";
 import { makeBranch, isSimulationFresh } from "./branch";
@@ -9,6 +12,7 @@ import type {
   ApprovalState,
   Branch,
   CommandResult,
+  ConstraintSet,
   GoalPolicy,
   RouteWaypoint,
   WorldState,
@@ -70,9 +74,7 @@ export function lockPolicy(
   return { ok: true, data: { policy: snapshot.policy } };
 }
 
-export function editPolicy(
-  snapshot: AppSnapshot,
-): CommandResult<{ policy: GoalPolicy; invalidatedBranches: number }> {
+function invalidatePolicyDependentEvidence(snapshot: AppSnapshot): number {
   let invalidatedBranches = 0;
   for (const branch of snapshot.branches) {
     if (branch.status === "stale" || branch.status === "merged") continue;
@@ -81,11 +83,81 @@ export function editPolicy(
     }
     branch.validationResult = null;
     branch.validatedMutationVersion = null;
-    branch.status = branch.metrics ? "simulated" : "draft";
+    branch.status = isSimulationFresh(branch) ? "simulated" : "draft";
   }
-  snapshot.policy = { ...snapshot.policy, status: "draft" };
   snapshot.approval = { branchId: null, approvedAt: null };
   snapshot.mergeRegisteredFor = null;
+  return invalidatedBranches;
+}
+
+export function updatePolicyConstraints(
+  snapshot: AppSnapshot,
+  updates: Partial<ConstraintSet>,
+): CommandResult<{
+  policy: GoalPolicy;
+  invalidatedBranches: number;
+  changed: boolean;
+}> {
+  if (snapshot.policy.status !== "draft") {
+    return err(
+      "POLICY_LOCKED",
+      "The human must choose Edit policy before changing policy constraints.",
+    );
+  }
+
+  const keys = Object.keys(POLICY_CONSTRAINT_LIMITS) as Array<
+    keyof ConstraintSet
+  >;
+  const supplied = keys.filter((key) => updates[key] !== undefined);
+  if (supplied.length === 0) {
+    return err(
+      "INVALID_POLICY_UPDATE",
+      "Provide at least one policy constraint to update.",
+    );
+  }
+
+  for (const key of supplied) {
+    const value = updates[key];
+    const limits = POLICY_CONSTRAINT_LIMITS[key];
+    if (
+      typeof value !== "number" ||
+      !Number.isFinite(value) ||
+      value < limits.min ||
+      value > limits.max ||
+      (key === "maxProtectedMoved" && !Number.isInteger(value))
+    ) {
+      return err(
+        "INVALID_POLICY_CONSTRAINT",
+        `${key} must be ${limits.min}–${limits.max}${
+          key === "maxProtectedMoved" ? " and an integer" : ""
+        }.`,
+      );
+    }
+  }
+
+  const changed = supplied.some(
+    (key) => snapshot.policy[key] !== updates[key],
+  );
+  if (!changed) {
+    return {
+      ok: true,
+      data: { policy: snapshot.policy, invalidatedBranches: 0, changed: false },
+    };
+  }
+
+  snapshot.policy = { ...snapshot.policy, ...updates };
+  const invalidatedBranches = invalidatePolicyDependentEvidence(snapshot);
+  return {
+    ok: true,
+    data: { policy: snapshot.policy, invalidatedBranches, changed: true },
+  };
+}
+
+export function editPolicy(
+  snapshot: AppSnapshot,
+): CommandResult<{ policy: GoalPolicy; invalidatedBranches: number }> {
+  const invalidatedBranches = invalidatePolicyDependentEvidence(snapshot);
+  snapshot.policy = { ...snapshot.policy, status: "draft" };
   return {
     ok: true,
     data: { policy: snapshot.policy, invalidatedBranches },

@@ -18,11 +18,13 @@ import {
   revokeApproval as commandRevoke,
   runSimulation as commandSimulate,
   type AppSnapshot,
+  updatePolicyConstraints as commandUpdatePolicyConstraints,
   validateBranch as commandValidate,
 } from "../domain/commands";
 import type {
   Branch,
   CommandResult,
+  ConstraintSet,
   GoalPolicy,
   TimelineEvent,
   WorldState,
@@ -45,6 +47,9 @@ export interface AppStore extends AppSnapshot {
     policy: GoalPolicy;
     invalidatedBranches: number;
   }>;
+  updatePolicyConstraints: (
+    updates: Partial<ConstraintSet>,
+  ) => ReturnType<typeof commandUpdatePolicyConstraints>;
   createBranch: (name: string) => CommandResult<{ branch: Branch }>;
   moveEntity: (input: {
     branchId: string;
@@ -138,6 +143,15 @@ export const useAppStore = create<AppStore>((set, get) => ({
     if (result.ok) {
       commit(set, snap);
       set({ capabilityBanner: false });
+    }
+    return result;
+  },
+  updatePolicyConstraints: (updates) => {
+    const snap = cloneSnap(get());
+    const result = commandUpdatePolicyConstraints(snap, updates);
+    if (result.ok) {
+      commit(set, snap);
+      if (result.data.changed) set({ capabilityBanner: false });
     }
     return result;
   },

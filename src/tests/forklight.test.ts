@@ -22,7 +22,7 @@ import {
 } from "../simulation/geometry";
 import { simulate } from "../simulation/simulator";
 import { LOCKED_WORLD } from "../domain/initialWorld";
-import { HARD_CONSTRAINTS } from "../constraints/rules";
+import { DEFAULT_POLICY_CONSTRAINTS } from "../constraints/rules";
 
 const TOL = 4;
 
@@ -214,7 +214,7 @@ describe("simulator", () => {
 
 describe("validator", () => {
   it("throughput below threshold fails", () => {
-    expect(HARD_CONSTRAINTS.minThroughputImprovement).toBe(0.2);
+    expect(DEFAULT_POLICY_CONSTRAINTS.minThroughputImprovement).toBe(0.2);
   });
 
   it("golden Future A fails distance", () => {

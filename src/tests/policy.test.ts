@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { HARD_CONSTRAINTS } from "../constraints/rules";
+import { DEFAULT_POLICY_CONSTRAINTS } from "../constraints/rules";
 import {
   applyLockedFutureB,
   approveBranch,
@@ -19,7 +19,7 @@ describe("human goal policy", () => {
     expect(snapshot.policy).toEqual({
       status: "draft",
       definedBy: "human",
-      ...HARD_CONSTRAINTS,
+      ...DEFAULT_POLICY_CONSTRAINTS,
     });
     expect(snapshot.policy).toMatchObject({
       minThroughputImprovement: 0.2,
