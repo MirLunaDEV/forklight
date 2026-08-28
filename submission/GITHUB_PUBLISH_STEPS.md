@@ -34,12 +34,11 @@ Before creating the repository, verify that `gh repo view forklight` does not id
 
 Publication checks:
 
-1. Confirm the repository visibility is **Public**.
-2. Confirm the default branch is `main`.
-3. Confirm GitHub renders `README.md` on the repository front page.
-4. Confirm GitHub detects the root `LICENSE` as MIT.
-5. Confirm the homepage opens the live Forklight app.
-6. Copy the final GitHub URL into `submission/DEVPOST_FINAL.md` and the Devpost form.
-7. Clone the public URL into a new empty folder and follow `docs/CLEAN_CLONE_VERIFICATION.md`.
+1. Repository visibility: **Public** — PASS.
+2. Default branch: `main` — PASS.
+3. Root `README.md` publication — PASS.
+4. Root MIT `LICENSE` publication — PASS.
+5. Public source clean clone and build — PASS; see `docs/CLEAN_CLONE_VERIFICATION.md`.
+6. Final GitHub URL recorded in `submission/DEVPOST_FINAL.md` — PASS.
 
 The local source freeze tag is `webmcp-challenge-submission-v1`. The final command above publishes that immutable tag after the repository has been created.
