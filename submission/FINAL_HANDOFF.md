@@ -23,7 +23,7 @@ The release tag identifies the complete feature-frozen tree including final subm
 - Production build: PASS
 - Secret/local-path/publication audit: PASS
 - Clean committed-tree clone: PASS — install, typecheck, 47 tests, build
-- Public GitHub clone: pending final publication verification
+- Public GitHub clone: PASS — install, typecheck, 47/47 tests, build
 
 ## Production WebMCP
 
