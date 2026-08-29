@@ -7,7 +7,7 @@
 
 ## Method
 
-A new temporary directory was created outside the working checkout. Git cloned the immutable public release tag over HTTPS with:
+A new temporary directory was created outside the working checkout. Git cloned the public v2 release tag over HTTPS with:
 
 ```text
 git clone --depth 1 --branch webmcp-challenge-submission-v2 https://github.com/MirLunaDEV/forklight.git <temporary-directory>
